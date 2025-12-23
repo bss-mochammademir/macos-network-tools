@@ -1,0 +1,21 @@
+# Swift
+.build/
+Packages/
+Package.resolved
+.swiftpm/
+# xcuserdata/ (Removed as it's often user-specific but sometimes useful, let's keep it ignored for now)
+userdata/
+
+# macOS
+.DS_Store
+*.app/
+# *.icns (We want to track the icon)
+*.iconset/
+
+# NetPulse specific
+NetPulse.app/
+# NetPulse.icns (We want to track the icon)
+NetPulse.iconset/
+
+# Local Dev
+.gemini/
