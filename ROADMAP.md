@@ -74,5 +74,12 @@ NetPulse aims to democratize enterprise-grade ZTNA/SASE features into a lightwei
 - **ChromeOS Extension/App**: PWA or Android-based agent to capture the ChromeOS fleet.
 - **Consistency as a Value**: Ensuring that whether on Mac or Windows, the user interface remains simple, fluid, and "premium," avoiding the cluttered feel of traditional enterprise IT software.
 
+## 🏢 Phase 13: SaaS Governance & Tenant Control (CASB Lite)
+**Objective**: Prevent data leakage to unauthorized personal tenants (e.g., personal Gmail/Drive) while using corporate devices.
+- **HTTP Header Injection**: Utilizing the tunnel to inject headers like `X-GooGApps-Allowed-Domains` for Google Workspace or `Restrict-Access-To-Tenants` for Microsoft 365.
+- **SSL Inspection (MitmProxy-lite)**: Implementing a lightweight, secure local proxy or cloud-based inspection to peek into HTTPS traffic for header manipulation.
+- **SaaS Fingerprinting**: Identifying which SaaS tools are being used via the agent's PID-to-Flow tracking and applying specific "Tenant Policies."
+- **Data Loss Prevention (DLP) Snippets**: Monitoring outgoing payloads for sensitive patterns (like credit card numbers or KTP) before they leave the device via SaaS apps.
+
 ---
 *NetPulse: Stabilizing the future of remote work.*
