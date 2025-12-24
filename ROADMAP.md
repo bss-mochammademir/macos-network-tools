@@ -37,5 +37,12 @@ This document outlines the future evolution of NetPulse, moving from a local pro
     - *Non-Compliant*: "Quarantine Preset" (only VPN & Security updates allowed).
 - **Fast Integrity Check**: Using `mdfind` and `NSWorkspace` for lightweight, non-intrusive inventory scanning that doesn't bog down the system.
 
+## 🌊 Phase 9: Phased Roll-out & Enforcement Strategy
+**Objective**: Enable seamless adoption without productivity disruption using a 4-stage deployment model.
+1. **Enrollment (Silent Mode)**: Agent is deployed and registered. It collects baseline performance and posturing data without taking any active measures.
+2. **Soft Enforcement (Risk-Aware)**: Automatically pauses or throttles high-risk domains and known insecure applications (e.g., malware delivery sites, unapproved P2P apps).
+3. **Default Enforcement (Compliance-Driven)**: Implements blocks based on organizational standards (ISO 27001) and "Parental Control-style" filtering for work-life balance and focus.
+4. **Strict Enforcement (PDP/Critical Mode)**: Maximum restriction. Only mission-critical applications (PDP - Policy Defined Perimeter) are allowed; all other traffic is suspended.
+
 ---
 *NetPulse: Stabilizing the future of remote work.*
