@@ -44,5 +44,12 @@ This document outlines the future evolution of NetPulse, moving from a local pro
 3. **Default Enforcement (Compliance-Driven)**: Implements blocks based on organizational standards (ISO 27001) and "Parental Control-style" filtering for work-life balance and focus.
 4. **Strict Enforcement (PDP/Critical Mode)**: Maximum restriction focused on **Personal Data Protection (Perlindungan Data Pribadi)**. Only strictly authorized, high-security applications are allowed; all other traffic is suspended to prevent data leakage in compliance with banking-level regulations.
 
+## ☁️ Phase 10: Private Tunneling & Cloud-Native ZTNA (GCP Integration)
+**Objective**: Access on-premises applications securely without public static IPs or inbound firewall rules using Google Cloud.
+- **Outbound Reverse Tunnels**: Integration with **GCP BeyondCorp Enterprise App Connectors**. Instead of opening ports, NetPulse (or a sister connector) initiates an outbound TLS tunnel to Google Cloud.
+- **Identity-Aware Proxy (IAP)**: Traffic is routed through GCP's IAP, ensuring that users are authenticated and their device meets the "Health Score" (from Phase 8) before they can reach the on-prem tunnel.
+- **Branch-Office-as-a-Code**: Ability to deploy small "NetPulse Tunnel Agents" on-prem that bridge the gap to the corporate VPC in GCP automatically.
+- **Zero-Trust App Access**: Users access on-prem internal URLs (e.g., `http://payroll.internal`) via the secure tunnel as if they were on the local network.
+
 ---
 *NetPulse: Stabilizing the future of remote work.*
