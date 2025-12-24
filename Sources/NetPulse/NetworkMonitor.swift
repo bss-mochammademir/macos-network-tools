@@ -26,6 +26,15 @@ class NetworkMonitor: ObservableObject {
     @Published var publicIP: String = "Loading..."
     @Published var localIP: String = "Loading..."
     @Published var isLoading: Bool = false
+    @Published var isPersistenceEnabled: Bool = PersistenceManager.shared.isRegistered() {
+        didSet {
+            if isPersistenceEnabled {
+                PersistenceManager.shared.register()
+            } else {
+                PersistenceManager.shared.unregister()
+            }
+        }
+    }
     @Published var isMeetingModeEnabled: Bool = false {
         didSet {
             // Mapping UI Meeting Mode to Enforcement State

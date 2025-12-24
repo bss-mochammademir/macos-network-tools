@@ -240,6 +240,11 @@ struct SettingsView: View {
                         .textFieldStyle(.roundedBorder)
                 }
                 
+                Section(header: Text("Security & Persistence")) {
+                    Toggle("Auto-Start at Login", isOn: $networkMonitor.isPersistenceEnabled)
+                        .help("Ensure NetPulse stays active in the background and restarts if closed.")
+                }
+                
                 Section(header: Text("Policy Details")) {
                     LabeledContent("Version", value: "\(networkMonitor.currentPolicy.version)")
                     LabeledContent("Last Updated", value: networkMonitor.currentPolicy.lastUpdated, format: .dateTime)

@@ -3,7 +3,7 @@
 # Configuration
 APP_NAME="NetPulse"
 VERSION="1.1"
-BUNDLE_ID="com.emir.netpulse"
+BUNDLE_ID="id.emiro.netpulse"
 
 echo "🚀 Building $APP_NAME..."
 

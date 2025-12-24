@@ -15,7 +15,7 @@ struct NetPulseApp: App {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             ContentView(networkMonitor: networkMonitor)
         }
         .windowStyle(.hiddenTitleBar)
@@ -32,8 +32,15 @@ struct NetPulseApp: App {
             .keyboardShortcut("M")
             
             Button("Show Monitor") {
-                NSApp.activate(ignoringOtherApps: true)
-                // In macOS 13+, the first window opens automatically if not already open
+                openWindow(id: "main")
+                
+                // Fallback for cases where openWindow doesn't bring it to front
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
+                        window.makeKeyAndOrderFront(nil)
+                    }
+                    NSApp.activate(ignoringOtherApps: true)
+                }
             }
             .keyboardShortcut("S")
             
