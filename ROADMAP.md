@@ -58,5 +58,13 @@ This document outlines the future evolution of NetPulse, moving from a local pro
 - **Cryptographic Request Signing**: NetPulse agent signs outgoing requests with a hardware-backed certificate (from the Secure Enclave). The backend verifies the signature, proving identity more strongly than an IP address ever could.
 - **Unified Audit Logs**: Merging GCP IAP logs (Identity) with NetPulse Agent logs (Local Context) to build a "bulletproof" forensic trail that satisfies OJK/BI/Banking regulators.
 
+## 💻 Phase 12: Cross-Platform Expansion (Windows & ChromeOS)
+**Objective**: Surface the premium "Apple-ish" experience and security features to the broader organization, starting with Windows.
+- **Windows Implementation (C# / .NET)**: Rebuilding the engine for Windows while strictly maintaining the "NetPulse Aesthetic."
+- **TPM Integration**: Using the **Windows Trusted Platform Module (TPM)** to achieve the same hardware-backed cryptographic signing found in the macOS Secure Enclave.
+- **Native Windows Control**: Utilizing Windows Filtering Platform (WFP) for high-performance network monitoring and enforcement.
+- **ChromeOS Extension/App**: PWA or Android-based agent to capture the ChromeOS fleet.
+- **Consistency as a Value**: Ensuring that whether on Mac or Windows, the user interface remains simple, fluid, and "premium," avoiding the cluttered feel of traditional enterprise IT software.
+
 ---
 *NetPulse: Stabilizing the future of remote work.*
