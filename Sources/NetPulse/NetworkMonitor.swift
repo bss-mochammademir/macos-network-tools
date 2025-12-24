@@ -26,22 +26,54 @@ class NetworkMonitor: ObservableObject {
     @Published var publicIP: String = "Loading..."
     @Published var localIP: String = "Loading..."
     @Published var isLoading: Bool = false
-    @Published var isMeetingModeEnabled: Bool = false
+    @Published var isMeetingModeEnabled: Bool = false {
+        didSet {
+            // Mapping UI Meeting Mode to Enforcement State
+            currentPolicy.currentState = isMeetingModeEnabled ? .focus : .normal
+            saveCurrentPolicy()
+        }
+    }
+    
+    @Published var currentPolicy: Policy
     
     private var timer: Timer?
     private var lastStats: [String: (in: Int64, out: Int64)] = [:]
     private var lastFetchTime: Date?
     private var pausedPIDs: Set<Int32> = []
     
-    // Whitelist for Meeting Mode
-    private let meetingWhitelist = [
+    // Default fallback whitelist
+    private let defaultWhitelist = [
         "zoom", "zoom.us", "Teams", "Microsoft Teams", "Slack", "Webex", 
         "Skype", "FaceTime", "Google Chrome", "Safari", "Firefox",
         "Tailscale", "Cloudflare", "CloudflareWARP", "WARP", "AnyConnect", 
         "GlobalProtect", "NetPulse", "Antigravity", "ControlCenter", 
         "SystemUIServer", "WindowServer", "trustd", "mDNSResponder",
-        "hidd", "coreaudiod", "bluetoothd"
+        "hidd", "coreaudiod", "bluetoothd", "language_server", "Antigravity"
     ]
+    
+    init() {
+        // Load policy or use default
+        if let localPolicy = PolicyStorage.shared.loadPolicy() {
+            self.currentPolicy = localPolicy
+        } else {
+            self.currentPolicy = Policy(
+                version: 1,
+                tenantId: "DEFAULT",
+                currentState: .normal,
+                whitelist: defaultWhitelist,
+                lastUpdated: Date()
+            )
+        }
+        
+        // Sync UI state
+        // Temporarily avoid didSet recursion if needed, but in init it's fine
+        self.isMeetingModeEnabled = (currentPolicy.currentState == .focus)
+    }
+    
+    func saveCurrentPolicy() {
+        currentPolicy.lastUpdated = Date()
+        PolicyStorage.shared.savePolicy(currentPolicy)
+    }
     
     func startMonitoring() {
         fetchPublicIP()
@@ -76,7 +108,7 @@ class NetworkMonitor: ObservableObject {
         for conn in connections {
             guard let pid = conn.pid, pid > 1 else { continue }
             
-            let isWhitelisted = meetingWhitelist.contains { whitelistItem in
+            let isWhitelisted = currentPolicy.whitelist.contains { whitelistItem in
                 conn.processName.lowercased().contains(whitelistItem.lowercased())
             }
             

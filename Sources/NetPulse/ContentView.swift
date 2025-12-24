@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var networkMonitor = NetworkMonitor()
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -11,9 +12,13 @@ struct ContentView: View {
                     VStack(alignment: .leading) {
                         Text("NetPulse")
                             .font(.system(size: 18, weight: .bold))
-                        Text("PHASE 3 • PERFORMANCE MONITOR")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.pink)
+                        HStack(spacing: 4) {
+                            Image(systemName: networkMonitor.currentPolicy.currentState.icon)
+                                .font(.system(size: 8))
+                            Text(networkMonitor.currentPolicy.currentState.rawValue.uppercased())
+                                .font(.system(size: 10, weight: .black))
+                        }
+                        .foregroundColor(.pink)
                     }
                     Spacer()
                     
@@ -36,6 +41,14 @@ struct ContentView: View {
                     if networkMonitor.isLoading {
                         ProgressView().scaleEffect(0.6)
                     }
+                    
+                    Button(action: { showingSettings = true }) {
+                        Image(systemName: "gearshape.fill")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.leading, 8)
+                    .help("Configure Organization and Policy settings.")
                 }
                 
                 Picker("", selection: $networkMonitor.sortMode) {
@@ -129,6 +142,9 @@ struct ContentView: View {
         .onAppear {
             networkMonitor.startMonitoring()
         }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(networkMonitor: networkMonitor)
+        }
     }
 
     func formatBytes(_ bytes: Int64) -> String {
@@ -207,5 +223,37 @@ struct AppRow: View {
         } else {
             return String(format: "%.1f MB/s", kbps / 1024.0)
         }
+    }
+}
+struct SettingsView: View {
+    @ObservedObject var networkMonitor: NetworkMonitor
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Settings")
+                .font(.headline)
+            
+            Form {
+                Section(header: Text("Organization")) {
+                    TextField("Tenant ID", text: $networkMonitor.currentPolicy.tenantId)
+                        .textFieldStyle(.roundedBorder)
+                }
+                
+                Section(header: Text("Policy Details")) {
+                    LabeledContent("Version", value: "\(networkMonitor.currentPolicy.version)")
+                    LabeledContent("Last Updated", value: networkMonitor.currentPolicy.lastUpdated, format: .dateTime)
+                }
+            }
+            .formStyle(.grouped)
+            
+            Button("Done") {
+                networkMonitor.saveCurrentPolicy()
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.bottom)
+        }
+        .frame(width: 300, height: 350)
     }
 }
