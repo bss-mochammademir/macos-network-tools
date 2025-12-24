@@ -42,7 +42,7 @@ This document outlines the future evolution of NetPulse, moving from a local pro
 1. **Enrollment (Silent Mode)**: Agent is deployed and registered. It collects baseline performance and posturing data without taking any active measures.
 2. **Soft Enforcement (Risk-Aware)**: Automatically pauses or throttles high-risk domains and known insecure applications (e.g., malware delivery sites, unapproved P2P apps).
 3. **Default Enforcement (Compliance-Driven)**: Implements blocks based on organizational standards (ISO 27001) and "Parental Control-style" filtering for work-life balance and focus.
-4. **Strict Enforcement (PDP/Critical Mode)**: Maximum restriction. Only mission-critical applications (PDP - Policy Defined Perimeter) are allowed; all other traffic is suspended.
+4. **Strict Enforcement (PDP/Critical Mode)**: Maximum restriction focused on **Personal Data Protection (Perlindungan Data Pribadi)**. Only strictly authorized, high-security applications are allowed; all other traffic is suspended to prevent data leakage in compliance with banking-level regulations.
 
 ---
 *NetPulse: Stabilizing the future of remote work.*
