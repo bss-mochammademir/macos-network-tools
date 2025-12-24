@@ -2,6 +2,14 @@
 
 This document outlines the future evolution of NetPulse, moving from a local productivity tool to a centralized management and security platform.
 
+## 🎯 Value Proposition
+NetPulse aims to democratize enterprise-grade ZTNA/SASE features into a lightweight, "Apple-ish" experience.
+- **Bandwidth Reserve & Distraction Reduction**: Achieved through "Meeting Mode" and "Smart Pause" logic.
+- **URL & App Filtering**: Moving from local blacklists to centrally managed "Context-Aware" enforcement.
+- **VPN Replacement**: Scalable tunneling via Google Cloud BeyondCorp integration (Phase 10).
+- **Identity/Context-Aware Access**: Merging local device "Posturing" (HIP) with Cloud Identity (SSO/IAP).
+- **PDP Compliance**: Satisfying "Perlindungan Data Pribadi" via strict enforcement modes and cryptographic attribution.
+
 ## 🚀 Phase 4: Cloud Sync & Policy Management
 **Objective**: Synchronize settings and whitelists across multiple devices for a single user.
 - **User Accounts**: Integration with SSO (Google, Microsoft) for profile management.
