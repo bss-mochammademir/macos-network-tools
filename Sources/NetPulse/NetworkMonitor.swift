@@ -30,24 +30,43 @@ class NetworkMonitor: ObservableObject {
     @Published var isPersistenceEnabled: Bool = UserDefaults.standard.bool(forKey: "persistencePreference")
     
     func verifyPassword(_ input: String) -> Bool {
-        return input == "Lullaby"
+        return LullabyGuard.shared.verify(input)
     }
 
-    func setPersistence(_ enabled: Bool) {
-        isPersistenceEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: "persistencePreference")
+    func setPersistence(_ enabled: Bool, password: String) {
         if enabled {
-            PersistenceManager.shared.register()
+            // Enabling doesn't strictly need password if we want to allow re-enabling easily? 
+            // But strict mode says yes. Let's stick to requiring it for disabling primarily.
+            // But for consistency let's ask for it if we are changing state.
+            // Actually, enabling persistence is usually fine? 
+            // The prompt "Verify End-to-End Persistence" implies we need protection against disabling.
+            // Let's require it for DISABLE only to avoid friction on enable?
+            // "The 'Lullaby' master password must consistently protect all critical actions, including enabling/disabling"
+            // So yes, enabling also needs it if the user requirement says "including enabling/disabling".
+            if LullabyGuard.shared.verify(password) {
+                 isPersistenceEnabled = enabled
+                 UserDefaults.standard.set(enabled, forKey: "persistencePreference")
+                 PersistenceManager.shared.register()
+            }
         } else {
-            PersistenceManager.shared.unregister()
+             // Disable
+             if PersistenceManager.shared.unregister(password: password) {
+                 isPersistenceEnabled = false
+                 UserDefaults.standard.set(false, forKey: "persistencePreference")
+             }
         }
     }
 
-    func toggleHardening() {
+    func toggleHardening(password: String) {
         if isHardened {
-            _ = PersistenceManager.shared.relaxHardening()
+            _ = PersistenceManager.shared.relaxHardening(password: password)
         } else {
-            _ = PersistenceManager.shared.elevateToHardened()
+            // Elevation scripts inside PersistenceManager don't take the Lullaby password, 
+            // they take the System Admin Password (via osascript).
+            // BUT, strictly speaking, we should GATE the request behind Lullaby first.
+            if LullabyGuard.shared.verify(password) {
+                _ = PersistenceManager.shared.elevateToHardened()
+            }
         }
         // Force refresh status after the process completes
         isHardened = PersistenceManager.shared.isHardened()

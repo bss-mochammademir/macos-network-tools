@@ -254,12 +254,9 @@ struct SettingsView: View {
                     Toggle("Auto-Start at Login", isOn: Binding(
                         get: { networkMonitor.isPersistenceEnabled },
                         set: { newValue in
-                            if newValue {
-                                networkMonitor.setPersistence(true)
-                            } else {
-                                stateTarget = .persistence
-                                showingPasswordAlert = true
-                            }
+                            // Always require password for changing persistence state
+                            stateTarget = .persistence
+                            showingPasswordAlert = true
                         }
                     ))
                     .help("Ensure NetPulse stays active in the background and restarts if closed.")
@@ -267,31 +264,21 @@ struct SettingsView: View {
                     Toggle("CrowdStrike-Grade Protection", isOn: Binding(
                         get: { networkMonitor.isHardened },
                         set: { newValue in
-                            if newValue {
-                                networkMonitor.toggleHardening()
-                            } else {
-                                stateTarget = .hardening
-                                showingPasswordAlert = true
-                            }
+                            // Always require password for changing hardening state
+                            stateTarget = .hardening
+                            showingPasswordAlert = true
                         }
                     ))
                     .help("Elevate NetPulse to a system-wide daemon for uncompromising persistence.")
-                    .alert("Admin Authorization Required", isPresented: $showingPasswordAlert) {
-                        SecureField("Password", text: $passwordInput)
-                        Button("Unlock", action: {
-                            if networkMonitor.verifyPassword(passwordInput) {
-                                switch stateTarget {
-                                case .persistence:
-                                    networkMonitor.setPersistence(false)
-                                case .hardening:
-                                    networkMonitor.toggleHardening()
-                                }
+                    .sheet(isPresented: $showingPasswordAlert) {
+                        PasswordPromptView(isPresented: $showingPasswordAlert) { password in
+                            switch stateTarget {
+                            case .persistence:
+                                networkMonitor.setPersistence(!networkMonitor.isPersistenceEnabled, password: password)
+                            case .hardening:
+                                networkMonitor.toggleHardening(password: password)
                             }
-                            passwordInput = ""
-                        })
-                        Button("Cancel", role: .cancel) { passwordInput = "" }
-                    } message: {
-                        Text("Please enter the master password to modify agent protection levels.")
+                        }
                     }
 
                     if networkMonitor.isHardened {

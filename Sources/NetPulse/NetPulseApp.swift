@@ -15,11 +15,29 @@ struct NetPulseApp: App {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
+        // HEADLESS MODE CHECK:
+        // If we are running as Root (Daemon), do NOT show windows.
+        // We only want the enforcement logic to run.
+        let isRoot = (getuid() == 0)
+        
         WindowGroup(id: "main") {
-            ContentView(networkMonitor: networkMonitor)
+            if !isRoot {
+                ContentView(networkMonitor: networkMonitor)
+                    .alwaysOnTop()
+            } else {
+                // Daemon Mode: Empty View or specific status view
+                // Ideally, WindowGroup shouldn't exist, but SwiftUI App lifecycle mandates a Scene.
+                // We can use Settings scene only? Or EmptyView with hidden window.
+                EmptyView()
+                    .onAppear {
+                        // In Daemon mode, we don't need the window.
+                        // We rely on the app running in background.
+                    }
+            }
         }
+        // Hide window completely if root
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 400, height: 600)
+        .defaultSize(width: isRoot ? 0 : 400, height: isRoot ? 0 : 600)
         
         MenuBarExtra {
             Text("NetPulse: \(networkMonitor.currentPolicy.currentState.rawValue)")
@@ -67,7 +85,7 @@ struct NetPulseApp: App {
                 if alert.runModal() == .alertFirstButtonReturn {
                     if networkMonitor.verifyPassword(input.stringValue) {
                         if !networkMonitor.isHardened {
-                            PersistenceManager.shared.unregister()
+                            _ = PersistenceManager.shared.unregister(password: input.stringValue)
                         }
                         NSApplication.shared.terminate(nil)
                     }

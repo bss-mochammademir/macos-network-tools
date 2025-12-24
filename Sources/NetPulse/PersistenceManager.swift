@@ -80,12 +80,17 @@ class PersistenceManager {
         }
     }
 
-    func unregister() {
+    func unregister(password: String) -> Bool {
+        guard LullabyGuard.shared.verify(password) else {
+            print("🛑 Persistence: Lullaby authentication failed.")
+            return false
+        }
         if isRegistered() {
             shell("launchctl bootout gui/\(getuid()) \(plistURL.path)")
             try? FileManager.default.removeItem(at: plistURL)
             print("🗑️ Persistence: LaunchAgent removed.")
         }
+        return true
     }
 
     @discardableResult
@@ -106,7 +111,6 @@ class PersistenceManager {
         return output
     }
 
-    @discardableResult
     @discardableResult
     func elevateToHardened() -> Bool {
         let bundlePath = Bundle.main.bundlePath
@@ -152,15 +156,34 @@ class PersistenceManager {
     }
     
     @discardableResult
-    func relaxHardening() -> Bool {
+    func relaxHardening(password: String) -> Bool {
+        guard LullabyGuard.shared.verify(password) else {
+            print("🛑 Persistence: Lullaby authentication failed.")
+            return false
+        }
         let bundleId = self.bundleId
-        let cleanupScript = """
+        let tempScriptPath = "/tmp/relax_netpulse.sh"
+        
+        // Create a temporary script content
+        let scriptContent = """
+        #!/bin/bash
         launchctl unload /Library/LaunchDaemons/\(bundleId).plist 2>/dev/null || true
         rm -f /Library/LaunchDaemons/\(bundleId).plist
         rm -rf "/Library/Application Support/NetPulse"
+        exit 0
         """
         
-        let appleScript = "do shell script \(quotedForm(cleanupScript)) with administrator privileges"
+        do {
+            try scriptContent.write(toFile: tempScriptPath, atomically: true, encoding: .utf8)
+            // Make executable (chmod +x) - safe to do without sudo for /tmp file owned by user
+            shell("chmod +x \(tempScriptPath)")
+        } catch {
+            print("❌ Failed to create temp script: \(error)")
+            return false
+        }
+        
+        // Execute the script via osascript
+        let appleScript = "do shell script \"\(tempScriptPath)\" with administrator privileges"
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
@@ -169,9 +192,14 @@ class PersistenceManager {
         do {
             try process.run()
             process.waitUntilExit()
+            
+            // Clean up temp script
+            try? FileManager.default.removeItem(atPath: tempScriptPath)
+            
             return process.terminationStatus == 0 && !isHardened()
         } catch {
             print("❌ Relaxation failed: \(error)")
+            try? FileManager.default.removeItem(atPath: tempScriptPath)
             return false
         }
     }

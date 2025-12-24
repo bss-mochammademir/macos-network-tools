@@ -27,7 +27,7 @@ NetPulse aims to democratize enterprise-grade ZTNA/SASE features into a lightwei
 - **Meeting Whitelist**: Pre-defined rules for Zoom, Teams, VPNs, and system services.
 - **Visual Status**: Real-time "Suspended" badges and state tracking of background consumers.
 
-## 🚀 Phase 4: Cloud Sync & Policy Management
+## 🚀 [Phase 4: Cloud Sync & Policy Management](docs/phases/phase4.md)
 **Objective**: Synchronize settings and whitelists across multiple devices for a single user.
 - **User Accounts**: Integration with SSO (Google, Microsoft) for profile management.
 - **Global Whitelist**: Centrally managed whitelist that updates across all instances of NetPulse.

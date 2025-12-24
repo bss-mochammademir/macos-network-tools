@@ -35,6 +35,7 @@ struct Policy: Codable {
     var currentState: EnforcementState
     var whitelist: [String]
     var lastUpdated: Date
+    var lullabyHash: String?
 }
 
 class PolicyStorage {
