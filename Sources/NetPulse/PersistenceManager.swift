@@ -106,33 +106,77 @@ class PersistenceManager {
         return output
     }
 
-    func elevateToHardened() {
-        let scriptPath = "/Users/mochammad.emir/Library/Mobile Documents/com~apple~CloudDocs/Code/macos-network-tools/harden_agent.sh"
-        let appleScript = "do shell script \"'\(scriptPath)'\" with administrator privileges"
+    @discardableResult
+    @discardableResult
+    func elevateToHardened() -> Bool {
+        let bundlePath = Bundle.main.bundlePath
+        
+        // 1. Find the bundled script
+        guard let scriptPath = Bundle.main.path(forResource: "harden_agent", ofType: "sh") else {
+            print("❌ Error: harden_agent.sh not found in bundle resources.")
+            return false
+        }
+        
+        // 2. Identify the app bundle path (to pass to script for copying)
+        let appPath = bundlePath
+        
+        print("🛡️ Attempting elevation with bundled script...")
+        print("📜 Bundled Script: \(scriptPath)")
+        print("📦 App Path: \(appPath)")
+
+        let appleScript = "do shell script (quoted form of \"\(scriptPath)\" & \" \" & quoted form of \"\(appPath)\") with administrator privileges"
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
         process.arguments = ["-e", appleScript]
         
-        try? process.run()
-        process.waitUntilExit()
+        let outputPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = outputPipe
+        
+        do {
+            try process.run()
+            process.waitUntilExit()
+            
+            let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+            print("🚀 Elevation Output: \(output)")
+            
+            let success = process.terminationStatus == 0 && isHardened()
+            print("🏁 Elevation Success: \(success)")
+            return success
+        } catch {
+            print("❌ Elevation exception: \(error)")
+            return false
+        }
     }
     
-    func relaxHardening() {
+    @discardableResult
+    func relaxHardening() -> Bool {
         let bundleId = self.bundleId
         let cleanupScript = """
-        launchctl unload /Library/LaunchDaemons/\(bundleId).plist
+        launchctl unload /Library/LaunchDaemons/\(bundleId).plist 2>/dev/null || true
         rm -f /Library/LaunchDaemons/\(bundleId).plist
         rm -rf "/Library/Application Support/NetPulse"
         """
         
-        let appleScript = "do shell script \"\(cleanupScript)\" with administrator privileges"
+        let appleScript = "do shell script \(quotedForm(cleanupScript)) with administrator privileges"
         
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
         process.arguments = ["-e", appleScript]
         
-        try? process.run()
-        process.waitUntilExit()
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0 && !isHardened()
+        } catch {
+            print("❌ Relaxation failed: \(error)")
+            return false
+        }
+    }
+
+    private func quotedForm(_ string: String) -> String {
+        return "quoted form of \"\(string.replacingOccurrences(of: "\"", with: "\\\""))\""
     }
 }

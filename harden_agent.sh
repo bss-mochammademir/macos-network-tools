@@ -5,7 +5,15 @@
 
 set -e
 
-APP_PATH="/Users/mochammad.emir/Library/Mobile Documents/com~apple~CloudDocs/Code/macos-network-tools/NetPulse.app"
+# If an argument is passed, use it as APP_PATH, otherwise use the directory of the script
+if [ -n "$1" ]; then
+  APP_PATH="$1"
+else
+  # Default fallback if run manually from repo
+  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  APP_PATH="$SCRIPT_DIR/NetPulse.app"
+fi
+
 BINARY_SOURCE="$APP_PATH/Contents/MacOS/NetPulse"
 INSTALL_DIR="/Library/Application Support/NetPulse"
 INSTALL_BINARY="$INSTALL_DIR/NetPulse"
@@ -25,10 +33,22 @@ mkdir -p "$INSTALL_DIR"
 chmod 755 "$INSTALL_DIR"
 
 # 2. Copy binary
+echo "📦 Source Binary: $BINARY_SOURCE"
+echo "📦 Destination: $INSTALL_BINARY"
+
+if [ ! -f "$BINARY_SOURCE" ]; then
+    echo "❌ Error: Source binary not found at $BINARY_SOURCE"
+    # Try a desperate search just in case
+    echo "🔍 Searching for binary in $APP_PATH..."
+    find "$APP_PATH" -name "NetPulse" -type f
+    exit 1
+fi
+
 echo "📦 Copying binary to secure location..."
-cp "$BINARY_SOURCE" "$INSTALL_BINARY"
+cp -f "$BINARY_SOURCE" "$INSTALL_BINARY"
 chown root:wheel "$INSTALL_BINARY"
 chmod 755 "$INSTALL_BINARY"
+echo "✅ Binary copied and permissions set."
 
 # 3. Create Root LaunchDaemon Plist
 echo "📝 Generating Root LaunchDaemon plist..."

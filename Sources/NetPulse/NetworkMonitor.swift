@@ -45,10 +45,11 @@ class NetworkMonitor: ObservableObject {
 
     func toggleHardening() {
         if isHardened {
-            PersistenceManager.shared.relaxHardening()
+            _ = PersistenceManager.shared.relaxHardening()
         } else {
-            PersistenceManager.shared.elevateToHardened()
+            _ = PersistenceManager.shared.elevateToHardened()
         }
+        // Force refresh status after the process completes
         isHardened = PersistenceManager.shared.isHardened()
     }
     @Published var isMeetingModeEnabled: Bool = false {

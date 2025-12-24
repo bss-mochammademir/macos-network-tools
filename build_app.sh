@@ -35,9 +35,13 @@ else
     exit 1
 fi
 
-# 5. Copy Icon
+# 5. Copy Icon and Supporting Scripts
 if [ -f "NetPulse.icns" ]; then
     cp "NetPulse.icns" "$RESOURCES/"
+fi
+if [ -f "harden_agent.sh" ]; then
+    cp "harden_agent.sh" "$RESOURCES/"
+    chmod +x "$RESOURCES/harden_agent.sh"
 fi
 
 # 6. Create Info.plist
