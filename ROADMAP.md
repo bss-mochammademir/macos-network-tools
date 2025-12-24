@@ -27,5 +27,15 @@ This document outlines the future evolution of NetPulse, moving from a local pro
 - **Endpoint Security (ES) Integration**: Utilizing macOS `EndpointSecurity` framework to monitor and block attempts to `SIGKILL` the process or delete its core configuration files.
 - **Admin-Locked Uninstall**: Requiring a "Tamper Protection" password or MDM (Mobile Device Management) profile to uninstall or disable the agent.
 
+## 🧠 Phase 8: Micro-Scalable Posturing (Context-Aware HIP)
+**Objective**: Dynamically scale network capabilities based on the real-time "Health Score" of the device.
+- **Dynamic Throttling**: Instead of hard Allow/Deny, NetPulse can "throttle" total bandwidth if security patches are missing or mandatory agents are inactive.
+- **App-Specific Compliance**: Detect if unauthorized apps (e.g., non-encrypted chat tools) are installed and automatically apply "Smart Pause" to them while allowing corporate tools.
+- **HIP-to-Preset Mapping**: 
+    - *Healthy*: Full bandwidth, all whitelisted apps.
+    - *At-Risk*: Throttled to 1MB/s, background noise paused.
+    - *Non-Compliant*: "Quarantine Preset" (only VPN & Security updates allowed).
+- **Fast Integrity Check**: Using `mdfind` and `NSWorkspace` for lightweight, non-intrusive inventory scanning that doesn't bog down the system.
+
 ---
 *NetPulse: Stabilizing the future of remote work.*
