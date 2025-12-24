@@ -51,5 +51,12 @@ This document outlines the future evolution of NetPulse, moving from a local pro
 - **Branch-Office-as-a-Code**: Ability to deploy small "NetPulse Tunnel Agents" on-prem that bridge the gap to the corporate VPC in GCP automatically.
 - **Zero-Trust App Access**: Users access on-prem internal URLs (e.g., `http://payroll.internal`) via the secure tunnel as if they were on the local network.
 
+## 🏦 Phase 11: Source-IP Preservation & Cryptographic Attribution (Banking Compliance)
+**Objective**: Solve the regulatory "Source IP" blocker by ensuring the backend application can definitively identify the origin of every request.
+- **PROXY Protocol & XFF Injection**: Configure App Connectors to inject the `PROXY protocol` (for TCP) or `X-Forwarded-For` (for HTTP) headers, passing the true client IP directly to the backend.
+- **Deterministic Internal IP Mapping**: Assigning a unique, static Internal IP (via Private Service Connect) for each NetPulse agent, so the core banking system sees a consistent "Source IP" per user/device.
+- **Cryptographic Request Signing**: NetPulse agent signs outgoing requests with a hardware-backed certificate (from the Secure Enclave). The backend verifies the signature, proving identity more strongly than an IP address ever could.
+- **Unified Audit Logs**: Merging GCP IAP logs (Identity) with NetPulse Agent logs (Local Context) to build a "bulletproof" forensic trail that satisfies OJK/BI/Banking regulators.
+
 ---
 *NetPulse: Stabilizing the future of remote work.*
