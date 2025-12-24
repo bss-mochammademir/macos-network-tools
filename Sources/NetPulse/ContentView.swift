@@ -227,11 +227,17 @@ struct AppRow: View {
         }
     }
 }
+enum StateAction {
+    case persistence
+    case hardening
+}
+
 struct SettingsView: View {
     @ObservedObject var networkMonitor: NetworkMonitor
     @Environment(\.dismiss) var dismiss
     @State private var showingPasswordAlert = false
     @State private var passwordInput = ""
+    @State private var stateTarget: StateAction = .persistence
 
     var body: some View {
         VStack(spacing: 20) {
@@ -251,23 +257,41 @@ struct SettingsView: View {
                             if newValue {
                                 networkMonitor.setPersistence(true)
                             } else {
-                                // Request password to disable
+                                stateTarget = .persistence
                                 showingPasswordAlert = true
                             }
                         }
                     ))
                     .help("Ensure NetPulse stays active in the background and restarts if closed.")
+
+                    Toggle("CrowdStrike-Grade Protection", isOn: Binding(
+                        get: { networkMonitor.isHardened },
+                        set: { newValue in
+                            if newValue {
+                                networkMonitor.toggleHardening()
+                            } else {
+                                stateTarget = .hardening
+                                showingPasswordAlert = true
+                            }
+                        }
+                    ))
+                    .help("Elevate NetPulse to a system-wide daemon for uncompromising persistence.")
                     .alert("Admin Authorization Required", isPresented: $showingPasswordAlert) {
                         SecureField("Password", text: $passwordInput)
                         Button("Unlock", action: {
                             if networkMonitor.verifyPassword(passwordInput) {
-                                networkMonitor.setPersistence(false)
+                                switch stateTarget {
+                                case .persistence:
+                                    networkMonitor.setPersistence(false)
+                                case .hardening:
+                                    networkMonitor.toggleHardening()
+                                }
                             }
                             passwordInput = ""
                         })
                         Button("Cancel", role: .cancel) { passwordInput = "" }
                     } message: {
-                        Text("Please enter the master password to disable agent persistence.")
+                        Text("Please enter the master password to modify agent protection levels.")
                     }
 
                     if networkMonitor.isHardened {

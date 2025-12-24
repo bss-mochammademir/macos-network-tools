@@ -49,8 +49,14 @@ struct NetPulseApp: App {
             Button("Quit NetPulse") {
                 // Request password via a standard macOS alert since MenuBarExtra doesn't support SwiftUI Alerts easily
                 let alert = NSAlert()
-                alert.messageText = "Admin Authorization Required"
-                alert.informativeText = "Please enter the master password to quit NetPulse and disable persistence."
+                if networkMonitor.isHardened {
+                    alert.messageText = "System Protection Active"
+                    alert.informativeText = "NetPulse is currently HARDENED at the system level. Entering the master password will close this MenuBar icon, but the system daemon will remain active in the background for enforcement."
+                } else {
+                    alert.messageText = "Admin Authorization Required"
+                    alert.informativeText = "Please enter the master password to quit NetPulse and disable persistence."
+                }
+                
                 alert.alertStyle = .critical
                 alert.addButton(withTitle: "Unlock")
                 alert.addButton(withTitle: "Cancel")
@@ -60,7 +66,9 @@ struct NetPulseApp: App {
                 
                 if alert.runModal() == .alertFirstButtonReturn {
                     if networkMonitor.verifyPassword(input.stringValue) {
-                        PersistenceManager.shared.unregister()
+                        if !networkMonitor.isHardened {
+                            PersistenceManager.shared.unregister()
+                        }
                         NSApplication.shared.terminate(nil)
                     }
                 }

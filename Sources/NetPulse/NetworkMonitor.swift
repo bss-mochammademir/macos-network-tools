@@ -42,6 +42,15 @@ class NetworkMonitor: ObservableObject {
             PersistenceManager.shared.unregister()
         }
     }
+
+    func toggleHardening() {
+        if isHardened {
+            PersistenceManager.shared.relaxHardening()
+        } else {
+            PersistenceManager.shared.elevateToHardened()
+        }
+        isHardened = PersistenceManager.shared.isHardened()
+    }
     @Published var isMeetingModeEnabled: Bool = false {
         didSet {
             // Mapping UI Meeting Mode to Enforcement State

@@ -105,4 +105,34 @@ class PersistenceManager {
         let output = String(data: data, encoding: .utf8) ?? ""
         return output
     }
+
+    func elevateToHardened() {
+        let scriptPath = "/Users/mochammad.emir/Library/Mobile Documents/com~apple~CloudDocs/Code/macos-network-tools/harden_agent.sh"
+        let appleScript = "do shell script \"'\(scriptPath)'\" with administrator privileges"
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", appleScript]
+        
+        try? process.run()
+        process.waitUntilExit()
+    }
+    
+    func relaxHardening() {
+        let bundleId = self.bundleId
+        let cleanupScript = """
+        launchctl unload /Library/LaunchDaemons/\(bundleId).plist
+        rm -f /Library/LaunchDaemons/\(bundleId).plist
+        rm -rf "/Library/Application Support/NetPulse"
+        """
+        
+        let appleScript = "do shell script \"\(cleanupScript)\" with administrator privileges"
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", appleScript]
+        
+        try? process.run()
+        process.waitUntilExit()
+    }
 }
