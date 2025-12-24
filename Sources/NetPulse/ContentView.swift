@@ -16,6 +16,23 @@ struct ContentView: View {
                             .foregroundColor(.pink)
                     }
                     Spacer()
+                    
+                    // Meeting Mode Toggle
+                    Button(action: { networkMonitor.toggleMeetingMode() }) {
+                        HStack {
+                            Image(systemName: networkMonitor.isMeetingModeEnabled ? "video.fill" : "video")
+                            Text("Meeting Mode")
+                                .font(.system(size: 11, weight: .bold))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(networkMonitor.isMeetingModeEnabled ? Color.green : Color.secondary.opacity(0.2))
+                        .foregroundColor(networkMonitor.isMeetingModeEnabled ? .white : .primary)
+                        .cornerRadius(8)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Pause heavy background apps to prioritize your meeting.")
+
                     if networkMonitor.isLoading {
                         ProgressView().scaleEffect(0.6)
                     }
@@ -31,6 +48,21 @@ struct ContentView: View {
             .background(Color(nsColor: .windowBackgroundColor))
             
             Divider()
+
+            // Meeting Mode Info
+            if networkMonitor.isMeetingModeEnabled {
+                HStack {
+                    Image(systemName: "info.circle.fill")
+                    Text("Meeting Mode Active: Background apps with heavy traffic will be suspended.")
+                        .font(.system(size: 10))
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 6)
+                .background(Color.green.opacity(0.1))
+                .foregroundColor(.green)
+                Divider()
+            }
 
             // IP Info Bar
             HStack {
@@ -83,6 +115,13 @@ struct ContentView: View {
                 }
                 
                 Spacer()
+                
+                if networkMonitor.isMeetingModeEnabled {
+                    Text("STABILIZING NETWORK...")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundColor(.green)
+                        .opacity(0.8)
+                }
             }
             .padding()
             .background(Color(nsColor: .windowBackgroundColor))
@@ -110,12 +149,23 @@ struct AppRow: View {
             HStack {
                 Text(app.processName)
                     .font(.system(size: 13, weight: .medium))
+                
+                if app.isPaused {
+                    Text("SUSPENDED")
+                        .font(.system(size: 8, weight: .black))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(Color.orange)
+                        .foregroundColor(.white)
+                        .cornerRadius(3)
+                }
+
                 Spacer()
                 HStack(spacing: 8) {
                     if app.currentSpeed > 0 {
                         Text(formatSpeed(app.currentSpeed))
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.pink)
+                            .foregroundColor(app.isPaused ? .orange : .pink)
                     }
                     Text(formatBytes(app.totalBytes))
                         .font(.system(size: 11, design: .monospaced))
@@ -132,7 +182,7 @@ struct AppRow: View {
                     let ratio = mode == .total ? Double(app.totalBytes) / maxVal : app.currentSpeed / maxVal
                     Capsule()
                         .fill(LinearGradient(
-                            colors: mode == .total ? [.pink, .orange] : [.blue, .cyan], 
+                            colors: app.isPaused ? [.orange, .yellow] : (mode == .total ? [.pink, .orange] : [.blue, .cyan]), 
                             startPoint: .leading, 
                             endPoint: .trailing
                         ))

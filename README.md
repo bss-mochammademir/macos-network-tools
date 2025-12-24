@@ -36,5 +36,8 @@ The `NetPulse.app` will be created in the root directory. This bundle includes t
 - **Nettop**: Low-level macOS utility for network statistics.
 - **Combined**: For reactive data updates.
 
+## 🗺️ Roadmap
+See our [long-term vision and ZTNA journey](ROADMAP.md) for where we're headed next.
+
 ---
 Developed with ❤️ by Emir.

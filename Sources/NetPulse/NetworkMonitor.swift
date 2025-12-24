@@ -7,6 +7,7 @@ enum SortMode {
 
 struct Connection: Identifiable, Equatable {
     let id: String
+    let pid: Int32?
     let processName: String
     let bytesIn: Int64
     let bytesOut: Int64
@@ -14,43 +15,104 @@ struct Connection: Identifiable, Equatable {
     let speedOut: Double // bytes per second
     var totalBytes: Int64 { bytesIn + bytesOut }
     var currentSpeed: Double { speedIn + speedOut }
+    var isPaused: Bool = false
 }
 
 class NetworkMonitor: ObservableObject {
     @Published var connections: [Connection] = []
     @Published var totalIn: Int64 = 0
     @Published var totalOut: Int64 = 0
-    @Published var sortMode: SortMode = .total
+    @Published var sortMode: SortMode = .speed
     @Published var publicIP: String = "Loading..."
     @Published var localIP: String = "Loading..."
     @Published var isLoading: Bool = false
+    @Published var isMeetingModeEnabled: Bool = false
     
     private var timer: Timer?
     private var lastStats: [String: (in: Int64, out: Int64)] = [:]
     private var lastFetchTime: Date?
+    private var pausedPIDs: Set<Int32> = []
+    
+    // Whitelist for Meeting Mode
+    private let meetingWhitelist = [
+        "zoom", "zoom.us", "Teams", "Microsoft Teams", "Slack", "Webex", 
+        "Skype", "FaceTime", "Google Chrome", "Safari", "Firefox",
+        "Tailscale", "Cloudflare", "CloudflareWARP", "WARP", "AnyConnect", 
+        "GlobalProtect", "NetPulse", "Antigravity", "ControlCenter", 
+        "SystemUIServer", "WindowServer", "trustd", "mDNSResponder",
+        "hidd", "coreaudiod", "bluetoothd"
+    ]
     
     func startMonitoring() {
         fetchPublicIP()
         getLocalIP()
-        
-        // Initial fetch
         fetchConnections()
         
-        // Schedule timer
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.fetchConnections()
+            self?.applyMeetingModeLogic()
         }
     }
     
     func stopMonitoring() {
+        if isMeetingModeEnabled {
+            toggleMeetingMode() // Resume all before stopping monitor
+        }
         timer?.invalidate()
         timer = nil
     }
+
+    func toggleMeetingMode() {
+        isMeetingModeEnabled.toggle()
+        if !isMeetingModeEnabled {
+            resumeAll()
+        }
+    }
+
+    private func applyMeetingModeLogic() {
+        guard isMeetingModeEnabled else { return }
+        
+        // Find processes using more than 10 KB/s that are not in whitelist
+        for conn in connections {
+            guard let pid = conn.pid, pid > 1 else { continue }
+            
+            let isWhitelisted = meetingWhitelist.contains { whitelistItem in
+                conn.processName.lowercased().contains(whitelistItem.lowercased())
+            }
+            
+            if isWhitelisted && pausedPIDs.contains(pid) {
+                resumeProcess(pid: pid)
+            } else if !isWhitelisted && conn.currentSpeed > 10240 { // > 10KB/s
+                pauseProcess(pid: pid)
+            }
+        }
+    }
+
+    private func pauseProcess(pid: Int32) {
+        if !pausedPIDs.contains(pid) {
+            print("⏸ Pausing PID \(pid)")
+            kill(pid, SIGSTOP)
+            pausedPIDs.insert(pid)
+        }
+    }
+
+    private func resumeProcess(pid: Int32) {
+        if pausedPIDs.contains(pid) {
+            print("▶️ Resuming PID \(pid)")
+            kill(pid, SIGCONT)
+            pausedPIDs.remove(pid)
+        }
+    }
+
+    private func resumeAll() {
+        for pid in pausedPIDs {
+            print("▶️ Resuming PID \(pid)")
+            kill(pid, SIGCONT)
+        }
+        pausedPIDs.removeAll()
+    }
     
     func getLocalIP() {
-        // Simple way to get local IP (interface en0 usually)
-        // For simplicity in this demo, we can just use Host.current().address assuming it resolves correctly,
-        // or parse ifconfig. Let's try Host way first, if failure we can parse later.
         let addresses = Host.current().addresses
         if let ip = addresses.first(where: { $0.contains(".") && !$0.starts(with: "127.") }) {
             self.localIP = ip
@@ -61,16 +123,9 @@ class NetworkMonitor: ObservableObject {
     
     func fetchPublicIP() {
         guard let url = URL(string: "https://api.ipify.org") else { return }
-        
         URLSession.shared.dataTask(with: url) { data, _, _ in
             if let data = data, let ip = String(data: data, encoding: .utf8) {
-                DispatchQueue.main.async {
-                    self.publicIP = ip
-                }
-            } else {
-                DispatchQueue.main.async {
-                    self.publicIP = "Error"
-                }
+                DispatchQueue.main.async { self.publicIP = ip }
             }
         }.resume()
     }
@@ -97,7 +152,17 @@ class NetworkMonitor: ObservableObject {
                         let prev = self.lastStats[conn.id] ?? (in: conn.bytesIn, out: conn.bytesOut)
                         let speedIn = Double(max(0, conn.bytesIn - prev.in)) / deltaSeconds
                         let speedOut = Double(max(0, conn.bytesOut - prev.out)) / deltaSeconds
-                        return Connection(id: conn.id, processName: conn.processName, bytesIn: conn.bytesIn, bytesOut: conn.bytesOut, speedIn: speedIn, speedOut: speedOut)
+                        // Updated structure hack: map doesn't allow direct update easily if let
+                        return Connection(
+                            id: conn.id, 
+                            pid: conn.pid,
+                            processName: conn.processName, 
+                            bytesIn: conn.bytesIn, 
+                            bytesOut: conn.bytesOut, 
+                            speedIn: speedIn, 
+                            speedOut: speedOut,
+                            isPaused: self.pausedPIDs.contains(conn.pid ?? -1)
+                        )
                     }
                     
                     self.lastStats = Dictionary(uniqueKeysWithValues: parsed.connections.map { ($0.id, (in: $0.bytesIn, out: $0.bytesOut)) })
@@ -121,7 +186,7 @@ class NetworkMonitor: ObservableObject {
     }
     
     private func parseNettopOutput(_ output: String) -> (connections: [Connection], totalIn: Int64, totalOut: Int64) {
-        var results: [String: (in: Int64, out: Int64)] = [:]
+        var results: [String: (pid: Int32?, in: Int64, out: Int64)] = [:]
         var globalIn: Int64 = 0
         var globalOut: Int64 = 0
         
@@ -135,11 +200,15 @@ class NetworkMonitor: ObservableObject {
                 let bytesIn = Int64(cols[4]) ?? 0
                 let bytesOut = Int64(cols[5]) ?? 0
                 
-                let procName = procInfo.components(separatedBy: ".").first ?? procInfo
+                let parts = procInfo.components(separatedBy: ".")
+                let procName = parts.first ?? procInfo
+                let pidStr = parts.last ?? ""
+                let pid = Int32(pidStr)
+                
                 if procName.isEmpty || procName == "time" { continue }
 
-                let current = results[procName] ?? (0, 0)
-                results[procName] = (current.in + bytesIn, current.out + bytesOut)
+                let current = results[procName] ?? (pid: pid, in: 0, out: 0)
+                results[procName] = (pid: pid ?? current.pid, in: current.in + bytesIn, out: current.out + bytesOut)
                 
                 globalIn += bytesIn
                 globalOut += bytesOut
@@ -147,7 +216,7 @@ class NetworkMonitor: ObservableObject {
         }
         
         let connections = results.map { name, stats in
-            Connection(id: name, processName: name, bytesIn: stats.in, bytesOut: stats.out, speedIn: 0, speedOut: 0)
+            Connection(id: name, pid: stats.pid, processName: name, bytesIn: stats.in, bytesOut: stats.out, speedIn: 0, speedOut: 0)
         }
         
         return (connections, globalIn, globalOut)
