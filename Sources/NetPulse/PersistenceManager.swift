@@ -22,7 +22,25 @@ class PersistenceManager {
         return FileManager.default.fileExists(atPath: plistURL.path)
     }
 
+    func isHardened() -> Bool {
+        let systemPlistPath = "/Library/LaunchDaemons/\(bundleId).plist"
+        return FileManager.default.fileExists(atPath: systemPlistPath)
+    }
+    
+    func isRunningAsRoot() -> Bool {
+        return getuid() == 0
+    }
+
     func register() {
+        // Cleanup old legacy ID if it exists
+        let oldBundleId = "com.emir.netpulse"
+        let oldPlistURL = plistURL.deletingLastPathComponent().appendingPathComponent("\(oldBundleId).plist")
+        if FileManager.default.fileExists(atPath: oldPlistURL.path) {
+            shell("launchctl unload \(oldPlistURL.path) 2>/dev/null")
+            try? FileManager.default.removeItem(at: oldPlistURL)
+            print("🧹 Persistence: Cleaned up legacy agent \(oldBundleId)")
+        }
+
         let plistContent = """
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

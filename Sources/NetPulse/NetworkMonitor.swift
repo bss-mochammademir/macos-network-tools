@@ -26,13 +26,20 @@ class NetworkMonitor: ObservableObject {
     @Published var publicIP: String = "Loading..."
     @Published var localIP: String = "Loading..."
     @Published var isLoading: Bool = false
-    @Published var isPersistenceEnabled: Bool = PersistenceManager.shared.isRegistered() {
-        didSet {
-            if isPersistenceEnabled {
-                PersistenceManager.shared.register()
-            } else {
-                PersistenceManager.shared.unregister()
-            }
+    @Published var isHardened: Bool = PersistenceManager.shared.isHardened()
+    @Published var isPersistenceEnabled: Bool = UserDefaults.standard.bool(forKey: "persistencePreference")
+    
+    func verifyPassword(_ input: String) -> Bool {
+        return input == "Lullaby"
+    }
+
+    func setPersistence(_ enabled: Bool) {
+        isPersistenceEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: "persistencePreference")
+        if enabled {
+            PersistenceManager.shared.register()
+        } else {
+            PersistenceManager.shared.unregister()
         }
     }
     @Published var isMeetingModeEnabled: Bool = false {
@@ -78,11 +85,14 @@ class NetworkMonitor: ObservableObject {
         // Temporarily avoid didSet recursion if needed, but in init it's fine
         self.isMeetingModeEnabled = (currentPolicy.currentState == .focus)
         
-        // Automatic Persistence on First Launch
+        // Automatic Persistence on First Launch & Update Check
         let hasLaunchedBefore = UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
         if !hasLaunchedBefore {
-            isPersistenceEnabled = true // Triggers register() via didSet
+            isPersistenceEnabled = true
             UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
+        } else if isPersistenceEnabled && !isHardened {
+            // Re-register to ensure plist is up-to-date
+            PersistenceManager.shared.register()
         }
     }
     

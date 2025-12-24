@@ -3,6 +3,8 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var networkMonitor: NetworkMonitor
     @State private var showingSettings = false
+    @State private var showingPasswordAlert = false
+    @State private var passwordInput = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -228,6 +230,8 @@ struct AppRow: View {
 struct SettingsView: View {
     @ObservedObject var networkMonitor: NetworkMonitor
     @Environment(\.dismiss) var dismiss
+    @State private var showingPasswordAlert = false
+    @State private var passwordInput = ""
 
     var body: some View {
         VStack(spacing: 20) {
@@ -241,8 +245,40 @@ struct SettingsView: View {
                 }
                 
                 Section(header: Text("Security & Persistence")) {
-                    Toggle("Auto-Start at Login", isOn: $networkMonitor.isPersistenceEnabled)
-                        .help("Ensure NetPulse stays active in the background and restarts if closed.")
+                    Toggle("Auto-Start at Login", isOn: Binding(
+                        get: { networkMonitor.isPersistenceEnabled },
+                        set: { newValue in
+                            if newValue {
+                                networkMonitor.setPersistence(true)
+                            } else {
+                                // Request password to disable
+                                showingPasswordAlert = true
+                            }
+                        }
+                    ))
+                    .help("Ensure NetPulse stays active in the background and restarts if closed.")
+                    .alert("Admin Authorization Required", isPresented: $showingPasswordAlert) {
+                        SecureField("Password", text: $passwordInput)
+                        Button("Unlock", action: {
+                            if networkMonitor.verifyPassword(passwordInput) {
+                                networkMonitor.setPersistence(false)
+                            }
+                            passwordInput = ""
+                        })
+                        Button("Cancel", role: .cancel) { passwordInput = "" }
+                    } message: {
+                        Text("Please enter the master password to disable agent persistence.")
+                    }
+
+                    if networkMonitor.isHardened {
+                        HStack {
+                            Image(systemName: "checkmark.seal.fill")
+                                .foregroundColor(.blue)
+                            Text("Hardened (System Protected)")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.blue)
+                        }
+                    }
                 }
                 
                 Section(header: Text("Policy Details")) {

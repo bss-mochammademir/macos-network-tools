@@ -47,7 +47,23 @@ struct NetPulseApp: App {
             Divider()
             
             Button("Quit NetPulse") {
-                NSApplication.shared.terminate(nil)
+                // Request password via a standard macOS alert since MenuBarExtra doesn't support SwiftUI Alerts easily
+                let alert = NSAlert()
+                alert.messageText = "Admin Authorization Required"
+                alert.informativeText = "Please enter the master password to quit NetPulse and disable persistence."
+                alert.alertStyle = .critical
+                alert.addButton(withTitle: "Unlock")
+                alert.addButton(withTitle: "Cancel")
+                
+                let input = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+                alert.accessoryView = input
+                
+                if alert.runModal() == .alertFirstButtonReturn {
+                    if networkMonitor.verifyPassword(input.stringValue) {
+                        PersistenceManager.shared.unregister()
+                        NSApplication.shared.terminate(nil)
+                    }
+                }
             }
             .keyboardShortcut("Q")
         } label: {
