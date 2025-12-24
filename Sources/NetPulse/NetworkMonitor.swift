@@ -77,6 +77,13 @@ class NetworkMonitor: ObservableObject {
         // Sync UI state
         // Temporarily avoid didSet recursion if needed, but in init it's fine
         self.isMeetingModeEnabled = (currentPolicy.currentState == .focus)
+        
+        // Automatic Persistence on First Launch
+        let hasLaunchedBefore = UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+        if !hasLaunchedBefore {
+            isPersistenceEnabled = true // Triggers register() via didSet
+            UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
+        }
     }
     
     func saveCurrentPolicy() {

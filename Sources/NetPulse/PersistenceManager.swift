@@ -54,8 +54,9 @@ class PersistenceManager {
             try plistContent.write(to: plistURL, atomically: true, encoding: .utf8)
             print("✅ Persistence: LaunchAgent plist created at \(plistURL.path)")
             
-            // Load the agent
-            shell("launchctl bootstrap gui/\(getuid()) \(plistURL.path)")
+            // Unload first if exists, then load -w (more robust for testing)
+            shell("launchctl unload \(plistURL.path) 2>/dev/null")
+            shell("launchctl load -w \(plistURL.path)")
         } catch {
             print("❌ Persistence Error: \(error.localizedDescription)")
         }

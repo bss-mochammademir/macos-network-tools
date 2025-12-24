@@ -64,6 +64,8 @@ cat <<EOF > "$CONTENTS/Info.plist"
     <true/>
     <key>LSUIElement</key>
     <true/>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>NetPulse needs local network access to identify your connection environment and optimize stability during meetings.</string>
 </dict>
 </plist>
 EOF
