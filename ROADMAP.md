@@ -10,18 +10,18 @@ NetPulse aims to democratize enterprise-grade ZTNA/SASE features into a lightwei
 - **Identity/Context-Aware Access**: Merging local device "Posturing" (HIP) with Cloud Identity (SSO/IAP).
 - **PDP Compliance**: Satisfying "Perlindungan Data Pribadi" via strict enforcement modes and cryptographic attribution.
 
-## ✅ Phase 1: Core Network Monitoring (Completed)
+## ✅ [Phase 1: Core Network Monitoring](docs/phases/phase1.md) (Completed)
 **Objective**: Build a lightweight engine to capture real-time network statistics on macOS.
 - **`nettop` Integration**: Leveraging native macOS binary for process-level monitoring.
 - **Architecture**: Observable model for reactive speed and total data tracking.
 
-## ✅ Phase 2: Performance UI & "Apple-ish" UX (Completed)
+## ✅ [Phase 2: Performance UI & "Apple-ish" UX](docs/phases/phase2.md) (Completed)
 **Objective**: Create a premium, high-performance interface that feels native to macOS.
 - **Heat-map Visuals**: Dynamic progress bars that scale based on top-bandwidth consumers.
 - **Native Experience**: Dark mode support, fluid SwiftUI components, and lightweight footprint.
 - **Device Attribution**: Real-time display of local and public IP addresses.
 
-## ✅ Phase 3: Smart Pause / Meeting Mode (Completed)
+## ✅ [Phase 3: Smart Pause / Meeting Mode](docs/phases/phase3.md) (Completed)
 **Objective**: Enable immediate network stabilization for online meetings.
 - **Process Signaling (`SIGSTOP`/`SIGCONT`)**: The ability to "freeze" background apps.
 - **Meeting Whitelist**: Pre-defined rules for Zoom, Teams, VPNs, and system services.
