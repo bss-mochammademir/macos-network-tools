@@ -62,6 +62,8 @@ cat <<EOF > "$CONTENTS/Info.plist"
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>LSUIElement</key>
+    <true/>
 </dict>
 </plist>
 EOF
