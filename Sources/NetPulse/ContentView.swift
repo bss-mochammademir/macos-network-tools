@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var networkMonitor = NetworkMonitor()
+    @ObservedObject var networkMonitor: NetworkMonitor
     @State private var showingSettings = false
 
     var body: some View {
