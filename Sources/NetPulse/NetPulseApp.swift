@@ -13,81 +13,71 @@ struct NetPulseApp: App {
     // Single source of truth for the entire app
     @StateObject private var networkMonitor = NetworkMonitor()
     @Environment(\.openWindow) private var openWindow
-    @AppStorage("showTechnicalView") private var showTechnicalView = false
 
     var body: some Scene {
         // HEADLESS MODE CHECK:
         // If we are running as Root (Daemon), do NOT show windows.
-        // We only want the enforcement logic to run.
         let isRoot = (getuid() == 0)
         
-        WindowGroup(id: "main") {
+        // 1. Dashboard Window (Simple View) - Singleton via Window scene
+        Window("NetPulse Dashboard", id: "main") {
             if !isRoot {
-                if showTechnicalView {
-                    TechnicalView(networkMonitor: networkMonitor)
-                        .alwaysOnTop()
-                } else {
-                    SimpleView(networkMonitor: networkMonitor)
-                        .alwaysOnTop()
-                        .onAppear {
-                            // Configure window for Simple View: fixed size, only close button
-                            if let window = NSApplication.shared.windows.first {
-                                window.styleMask.remove(.resizable)
-                                window.styleMask.remove(.miniaturizable)
-                                window.standardWindowButton(.zoomButton)?.isHidden = true
-                                window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-                            }
-                        }
-                }
-            } else {
-                // Daemon Mode: Empty View or specific status view
-                // Ideally, WindowGroup shouldn't exist, but SwiftUI App lifecycle mandates a Scene.
-                // We can use Settings scene only? Or EmptyView with hidden window.
-                EmptyView()
+                SimpleView(networkMonitor: networkMonitor)
+                    .alwaysOnTop()
                     .onAppear {
-                        // In Daemon mode, we don't need the window.
-                        // We rely on the app running in background.
+                        applyWindowStyling(id: "main", fixedSize: CGSize(width: 400, height: 500))
                     }
+            } else {
+                EmptyView()
             }
         }
-        // Window styling based on view mode
         .windowStyle(.hiddenTitleBar)
-        .windowResizability(showTechnicalView ? .contentSize : .contentSize)
-        .defaultSize(width: isRoot ? 0 : 400, height: isRoot ? 0 : (showTechnicalView ? 600 : 500))
-        .commands {
-            // Remove all window controls except close for Simple View
-            if !showTechnicalView {
-                CommandGroup(replacing: .windowSize) { }
+        .windowResizability(.contentSize)
+        .defaultSize(width: isRoot ? 0 : 400, height: isRoot ? 0 : 500)
+
+        // 2. Technical Monitor Window - Singleton via Window scene
+        Window("Technical Monitor", id: "technical") {
+            if !isRoot {
+                TechnicalView(networkMonitor: networkMonitor)
+                    .alwaysOnTop()
+                    .onAppear {
+                        applyWindowStyling(id: "technical", fixedSize: CGSize(width: 400, height: 600))
+                    }
+            } else {
+                EmptyView()
             }
         }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .defaultSize(width: isRoot ? 0 : 400, height: isRoot ? 0 : 600)
         
         MenuBarExtra {
             Text("NetPulse: \(networkMonitor.currentPolicy.currentState.rawValue)")
             
             Divider()
             
+            Button("Show Dashboard") {
+                openWindow(id: "main")
+                ensureWindowFront(id: "main", fixedSize: CGSize(width: 400, height: 500))
+            }
+            .keyboardShortcut("D")
+
+            Button("Open Technical Monitor") {
+                openWindow(id: "technical")
+                ensureWindowFront(id: "technical", fixedSize: CGSize(width: 400, height: 600))
+            }
+            .keyboardShortcut("T")
+            
+            Divider()
+
             Button(networkMonitor.isMeetingModeEnabled ? "Stop Meeting Mode" : "Start Meeting Mode") {
                 networkMonitor.toggleMeetingMode()
             }
             .keyboardShortcut("M")
             
-            Button("Show Monitor") {
-                openWindow(id: "main")
-                
-                // Fallback for cases where openWindow doesn't bring it to front
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "main" }) {
-                        window.makeKeyAndOrderFront(nil)
-                    }
-                    NSApp.activate(ignoringOtherApps: true)
-                }
-            }
-            .keyboardShortcut("S")
-            
             Divider()
             
             Button("Quit NetPulse") {
-                // Request password via a standard macOS alert since MenuBarExtra doesn't support SwiftUI Alerts easily
                 let alert = NSAlert()
                 if networkMonitor.isHardened {
                     alert.messageText = "System Protection Active"
@@ -116,6 +106,44 @@ struct NetPulseApp: App {
             .keyboardShortcut("Q")
         } label: {
             Image(systemName: networkMonitor.currentPolicy.currentState.icon)
+        }
+    }
+
+    private func applyWindowStyling(id: String, fixedSize: CGSize) {
+        // Delay to ensure window is created and available in NSApp.windows
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == id }) {
+                if id == "main" {
+                    // Dashboard is fixed size, only close button
+                    window.styleMask.remove([.resizable, .miniaturizable])
+                    window.standardWindowButton(.zoomButton)?.isHidden = true
+                    window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                    window.setContentSize(fixedSize)
+                } else {
+                    // Technical Monitor is standard (resizable, minimizable, maximizable)
+                    window.styleMask.insert([.resizable, .miniaturizable])
+                    window.standardWindowButton(.zoomButton)?.isHidden = false
+                    window.standardWindowButton(.miniaturizeButton)?.isHidden = false
+                    // No fixed size enforcement for technical view
+                }
+            }
+        }
+    }
+
+    private func ensureWindowFront(id: String, fixedSize: CGSize) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == id }) {
+                if id == "main" {
+                    // Re-apply styling for main window
+                    window.styleMask.remove([.resizable, .miniaturizable])
+                    window.standardWindowButton(.zoomButton)?.isHidden = true
+                    window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                    window.setContentSize(fixedSize)
+                }
+                
+                window.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
     }
 }

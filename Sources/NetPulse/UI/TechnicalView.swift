@@ -293,11 +293,6 @@ struct SettingsView: View {
                     }
                 }
                 
-                Section(header: Text("Display")) {
-                    Toggle("Show Technical Details", isOn: $showTechnicalView)
-                        .help("Toggle between simple user view and detailed technical monitoring view.")
-                }
-                
                 Section(header: Text("Policy Details")) {
                     LabeledContent("Version", value: "\(networkMonitor.currentPolicy.version)")
                     LabeledContent("Last Updated", value: networkMonitor.currentPolicy.lastUpdated, format: .dateTime)
