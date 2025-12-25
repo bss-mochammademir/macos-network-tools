@@ -12,7 +12,7 @@ functions.http('getPolicy', (req, res) => {
       tenant_id: "DEFAULT_TENANT_GCP"
     },
     policy: {
-      enforcement_mode: "soft", // Changed to "soft" to FORCE Meeting Mode OFF
+      enforcement_mode: "monitor_only", // Default Normal Mode
       global_whitelist: [
         // User Requested
         "CloudflareWARP", "WARP", "language_server", "Antigravity Hel", "Antigravity",

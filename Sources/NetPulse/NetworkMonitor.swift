@@ -182,6 +182,14 @@ class NetworkMonitor: ObservableObject {
             await refreshPolicy()
         }
         
+        // Periodic Policy Poll (Every 60 Seconds)
+        Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
+            print("🔄 Polling for policy update...")
+            Task {
+                await self?.refreshPolicy()
+            }
+        }
+        
         fetchPublicIP()
         getLocalIP()
         fetchConnections()
