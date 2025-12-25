@@ -130,7 +130,58 @@ class NetworkMonitor: ObservableObject {
         PolicyStorage.shared.savePolicy(currentPolicy)
     }
     
+    // MARK: - Cloud Sync
+    func refreshPolicy() async {
+        print("☁️ refreshing policy...")
+        do {
+            let remote = try await PolicyService.shared.fetchPolicy()
+            
+            DispatchQueue.main.async {
+                // Update Metadata
+                self.currentPolicy.version = remote.meta.version
+                self.currentPolicy.tenantId = remote.meta.tenant_id
+                self.currentPolicy.lastUpdated = Date()
+                
+                // Update Whitelist (Merge or Replace? Replace is safer for strict sync)
+                self.currentPolicy.whitelist = remote.policy.global_whitelist
+                
+                // Update Features
+                self.currentPolicy.features = remote.policy.features
+                
+                // Logic to validate hardening
+                if remote.policy.features.hardening {
+                    // We don't want to auto-harden without user consent flow, usually.
+                    // But if policy says so... for now let's just respect the flag if it attempts to disable it?
+                }
+                
+                // Map Enforcement Mode
+                switch remote.policy.enforcement_mode {
+                case "strict":
+                    self.currentPolicy.currentState = .pdp
+                case "focus":
+                    self.currentPolicy.currentState = .focus
+                    self.isMeetingModeEnabled = true
+                case "soft":
+                    self.currentPolicy.currentState = .normal
+                    self.isMeetingModeEnabled = false
+                default:
+                    break // Keep existing
+                }
+                
+                self.saveCurrentPolicy()
+                print("✅ Policy applied. Whitelist count: \(self.currentPolicy.whitelist.count)")
+            }
+        } catch {
+            print("⚠️ Failed to refresh policy: \(error)")
+        }
+    }
+    
     func startMonitoring() {
+        // Initial Fetch
+        Task {
+            await refreshPolicy()
+        }
+        
         fetchPublicIP()
         getLocalIP()
         fetchConnections()

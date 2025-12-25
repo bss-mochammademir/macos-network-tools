@@ -29,6 +29,7 @@ enum EnforcementState: String, Codable {
     }
 }
 
+// MARK: - Local Legacy Model (For backwards compatibility / flattened view)
 struct Policy: Codable {
     var version: Int
     var tenantId: String
@@ -36,6 +37,33 @@ struct Policy: Codable {
     var whitelist: [String]
     var lastUpdated: Date
     var lullabyHash: String?
+    
+    // New fields mapped from Cloud Policy
+    var features: PolicyFeatures?
+}
+
+// MARK: - Cloud JSON Models
+/// Represents the root JSON response from the Cloud Function
+struct PolicyResponse: Codable {
+    let meta: PolicyMeta
+    let policy: PolicyConfig
+}
+
+struct PolicyMeta: Codable {
+    let version: Int
+    let last_updated: String
+    let tenant_id: String
+}
+
+struct PolicyConfig: Codable {
+    let enforcement_mode: String // "monitor_only", "soft", "strict"
+    let global_whitelist: [String]
+    let features: PolicyFeatures
+}
+
+struct PolicyFeatures: Codable {
+    let meeting_mode: Bool
+    let hardening: Bool
 }
 
 class PolicyStorage {

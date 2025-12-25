@@ -1,0 +1,12 @@
+{
+  "name": "netpulse-policy-function",
+  "version": "1.0.0",
+  "description": "NetPulse Cloud Policy Service",
+  "main": "index.js",
+  "scripts": {
+    "start": "functions-framework --target=getPolicy"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0"
+  }
+}
