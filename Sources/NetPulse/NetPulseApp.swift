@@ -29,6 +29,15 @@ struct NetPulseApp: App {
                 } else {
                     SimpleView(networkMonitor: networkMonitor)
                         .alwaysOnTop()
+                        .onAppear {
+                            // Configure window for Simple View: fixed size, only close button
+                            if let window = NSApplication.shared.windows.first {
+                                window.styleMask.remove(.resizable)
+                                window.styleMask.remove(.miniaturizable)
+                                window.standardWindowButton(.zoomButton)?.isHidden = true
+                                window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                            }
+                        }
                 }
             } else {
                 // Daemon Mode: Empty View or specific status view
@@ -41,9 +50,16 @@ struct NetPulseApp: App {
                     }
             }
         }
-        // Hide window completely if root
+        // Window styling based on view mode
         .windowStyle(.hiddenTitleBar)
+        .windowResizability(showTechnicalView ? .contentSize : .contentSize)
         .defaultSize(width: isRoot ? 0 : 400, height: isRoot ? 0 : (showTechnicalView ? 600 : 500))
+        .commands {
+            // Remove all window controls except close for Simple View
+            if !showTechnicalView {
+                CommandGroup(replacing: .windowSize) { }
+            }
+        }
         
         MenuBarExtra {
             Text("NetPulse: \(networkMonitor.currentPolicy.currentState.rawValue)")
