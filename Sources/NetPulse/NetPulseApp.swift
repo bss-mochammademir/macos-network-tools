@@ -13,6 +13,7 @@ struct NetPulseApp: App {
     // Single source of truth for the entire app
     @StateObject private var networkMonitor = NetworkMonitor()
     @Environment(\.openWindow) private var openWindow
+    @AppStorage("showTechnicalView") private var showTechnicalView = false
 
     var body: some Scene {
         // HEADLESS MODE CHECK:
@@ -22,8 +23,13 @@ struct NetPulseApp: App {
         
         WindowGroup(id: "main") {
             if !isRoot {
-                ContentView(networkMonitor: networkMonitor)
-                    .alwaysOnTop()
+                if showTechnicalView {
+                    TechnicalView(networkMonitor: networkMonitor)
+                        .alwaysOnTop()
+                } else {
+                    SimpleView(networkMonitor: networkMonitor)
+                        .alwaysOnTop()
+                }
             } else {
                 // Daemon Mode: Empty View or specific status view
                 // Ideally, WindowGroup shouldn't exist, but SwiftUI App lifecycle mandates a Scene.
@@ -37,7 +43,7 @@ struct NetPulseApp: App {
         }
         // Hide window completely if root
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: isRoot ? 0 : 400, height: isRoot ? 0 : 600)
+        .defaultSize(width: isRoot ? 0 : 400, height: isRoot ? 0 : (showTechnicalView ? 600 : 500))
         
         MenuBarExtra {
             Text("NetPulse: \(networkMonitor.currentPolicy.currentState.rawValue)")

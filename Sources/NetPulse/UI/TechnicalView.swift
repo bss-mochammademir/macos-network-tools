@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ContentView: View {
+struct TechnicalView: View {
     @ObservedObject var networkMonitor: NetworkMonitor
     @State private var showingSettings = false
     @State private var showingPasswordAlert = false
@@ -238,6 +238,7 @@ struct SettingsView: View {
     @State private var showingPasswordAlert = false
     @State private var passwordInput = ""
     @State private var stateTarget: StateAction = .persistence
+    @AppStorage("showTechnicalView") private var showTechnicalView = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -290,6 +291,11 @@ struct SettingsView: View {
                                 .foregroundColor(.blue)
                         }
                     }
+                }
+                
+                Section(header: Text("Display")) {
+                    Toggle("Show Technical Details", isOn: $showTechnicalView)
+                        .help("Toggle between simple user view and detailed technical monitoring view.")
                 }
                 
                 Section(header: Text("Policy Details")) {

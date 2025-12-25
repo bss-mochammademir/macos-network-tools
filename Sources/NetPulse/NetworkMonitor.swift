@@ -1,8 +1,47 @@
 import Foundation
 import Combine
+import SwiftUI
 
 enum SortMode {
     case total, speed
+}
+
+enum CloudStatus {
+    case connected      // 🟢 Last sync < 90s
+    case stale          // 🟡 90s - 3min
+    case disconnected   // 🔴 >3min or error
+    case syncing        // 🔵 Active sync
+    case hardened       // 🟣 Root daemon mode
+    
+    var color: Color {
+        switch self {
+        case .connected: return .green
+        case .stale: return .yellow
+        case .disconnected: return .red
+        case .syncing: return .blue
+        case .hardened: return .purple
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .connected: return "checkmark.circle.fill"
+        case .stale: return "exclamationmark.triangle.fill"
+        case .disconnected: return "xmark.circle.fill"
+        case .syncing: return "arrow.triangle.2.circlepath"
+        case .hardened: return "lock.shield.fill"
+        }
+    }
+    
+    var label: String {
+        switch self {
+        case .connected: return "Connected"
+        case .stale: return "Connection Stale"
+        case .disconnected: return "Disconnected"
+        case .syncing: return "Syncing..."
+        case .hardened: return "Hardened Mode"
+        }
+    }
 }
 
 struct Connection: Identifiable, Equatable {
@@ -28,6 +67,8 @@ class NetworkMonitor: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var isHardened: Bool = PersistenceManager.shared.isHardened()
     @Published var isPersistenceEnabled: Bool = UserDefaults.standard.bool(forKey: "persistencePreference")
+    @Published var cloudStatus: CloudStatus = .disconnected
+    @Published var lastPolicySync: Date?
     
     func verifyPassword(_ input: String) -> Bool {
         return LullabyGuard.shared.verify(input)
@@ -133,6 +174,12 @@ class NetworkMonitor: ObservableObject {
     // MARK: - Cloud Sync
     func refreshPolicy() async {
         print("☁️ refreshing policy...")
+        
+        // Set syncing status
+        await MainActor.run {
+            self.cloudStatus = .syncing
+        }
+        
         do {
             let remote = try await PolicyService.shared.fetchPolicy()
             
@@ -169,10 +216,18 @@ class NetworkMonitor: ObservableObject {
                 }
                 
                 self.saveCurrentPolicy()
+                
+                // Update cloud status
+                self.lastPolicySync = Date()
+                self.cloudStatus = self.isHardened ? .hardened : .connected
+                
                 print("✅ Policy applied. Whitelist count: \(self.currentPolicy.whitelist.count)")
             }
         } catch {
             print("⚠️ Failed to refresh policy: \(error)")
+            await MainActor.run {
+                self.cloudStatus = .disconnected
+            }
         }
     }
     
